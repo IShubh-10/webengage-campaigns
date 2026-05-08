@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 
 export default function API() {
   const [campaigns, setCampaigns] = useState([]);
+  const [adminUsers, setadminUsers] = useState([]);
   const [formData, setFormData] = useState({
     title: "",
     type: "",
@@ -13,10 +14,14 @@ export default function API() {
 
   // ✅ FIXED API URL
  const API_URL = import.meta.env.VITE_API_URL;
+ const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL;
+
+ console.log("adminUsers",adminUsers);
 
   // ================= FETCH =================
   useEffect(() => {
     fetchCampaigns();
+    fetchAdminUsers();
   }, []);
 
   const fetchCampaigns = async () => {
@@ -28,6 +33,20 @@ export default function API() {
       console.log("📦 API Response:", data);
 
       setCampaigns(data);
+    } catch (error) {
+      console.error("❌ Error fetching:", error);
+    }
+  };
+
+  const fetchAdminUsers = async () => {
+    try {
+      const response = await fetch(ADMIN_API_URL);
+      console.log("📡 Status:", response.status);
+
+      const data = await response.json();
+      console.log("📦 Admin API Response:", data);
+
+      setadminUsers(data);
     } catch (error) {
       console.error("❌ Error fetching:", error);
     }
@@ -106,10 +125,15 @@ export default function API() {
     });
   };
 
+  const handleLogout = ()=>{
+       localStorage.removeItem("isLogedIn");
+       window.location.reload();
+  }
+
   // ================= UI =================
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h2>Campaign Gallery</h2>
+      <h2 style={{width: "auto", display: "flex", justifyContent: "space-between"}}>Campaign Gallery<span><button onClick={handleLogout}>Logout</button></span></h2>
 
       {/* ===== FORM ===== */}
       <form onSubmit={handleSubmit}>
@@ -141,7 +165,20 @@ export default function API() {
 
       <hr />
 
-      {/* ===== LIST ===== */}
+      {/* ===== CAMPAIGN LIST ===== */}
+        {adminUsers.map((item)=> (
+          <div key={item.id} style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
+          <p><b>Username:</b> {item.username}</p>
+          <p><b>User password:</b> {item.userpassword}</p>
+
+          {/* <button onClick={() => handleEdit(item)}>Edit</button>
+          <button onClick={() => handleDelete(item.id)} style={{ marginLeft: "10px" }}>
+            Delete
+          </button> */}
+        </div>
+        ))}
+
+      {/* ===== CAMPAIGN LIST ===== */}
       {campaigns.map((item) => (
         <div key={item.id} style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
           <h3>{item.title}</h3>

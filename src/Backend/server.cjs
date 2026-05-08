@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({path:'../../.env'});
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -18,6 +18,12 @@ const db = mysql.createPool({
     queueLimit: 0
 });
 
+// db.on("connection",(con)=>{
+//     if(con){
+//         console.log("Connection established")
+//     }
+// })
+
 // Check DB connection
 db.getConnection((err, conn) => {
     if (err) {
@@ -34,6 +40,17 @@ db.getConnection((err, conn) => {
 app.get('/api/campaigns', (req, res) => {
     db.query('SELECT * FROM campaigns ORDER BY id DESC', (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// GET all admin users
+app.get('/api/admin_credentials', (req, res) => {
+    db.query('SELECT * FROM admin_credentials ORDER BY id DESC', (err, results) => {
+       if (err) {
+                console.log(err);
+                return res.status(500).json({ error: err.message });
+            }
         res.json(results);
     });
 });
@@ -103,4 +120,5 @@ const PORT = 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📡 API: http://localhost:${PORT}/api/campaigns`);
+    console.log(`📡 API: http://localhost:${PORT}/api/admin_credentials`);
 });
