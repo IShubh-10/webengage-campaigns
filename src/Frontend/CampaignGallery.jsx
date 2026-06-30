@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom'; // Add this line
 import { 
   Plus, 
   Search, 
@@ -20,8 +21,10 @@ import {
   Tablet as TabletIcon,
   Link,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  UploadCloud
 } from 'lucide-react';
+import Header from './Header';
 
 const CAMPAIGN_TYPES = ['Email', 'onsite notification', 'onsite survey', 'In App', 'webp', 'CWC'];
 
@@ -35,6 +38,8 @@ const VIEWPORTS = {
 const API_BASE_URL = 'http://localhost:5000/api/campaigns'; 
 
 export default function App() {
+  const navigate = useNavigate(); // Add this
+
   const [view, setView] = useState('gallery');
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +52,9 @@ export default function App() {
   const [editingId, setEditingId] = useState(null);
   const [activeViewport, setActiveViewport] = useState('desktop');
 
+  // Drag and Drop state
+  const [isDragging, setIsDragging] = useState(false);
+
   // Multi-page state management
   const [activePageIndex, setActivePageIndex] = useState(0);
   const [formData, setFormData] = useState({
@@ -56,6 +64,7 @@ export default function App() {
     asanaLink: '',
     code: '',
     imageUrl: '',
+    cwcCode:'',
     pages: [''] // Array to hold survey pages
   });
 
@@ -86,7 +95,8 @@ export default function App() {
         return {
           ...c,
           tags: typeof c.tags === 'string' ? c.tags.split(',').map(t => t.trim()).filter(Boolean) : (c.tags || []),
-          pages: pages
+          pages: pages,
+          cwcCode: c.cwcCode || '' // Fetching cwcCode from backend
         };
       });
       
@@ -103,9 +113,20 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   fetchCampaigns();
+  // }, []);
+
+   useEffect(() => {
     fetchCampaigns();
-  }, []);
+
+    const isGuest = localStorage.getItem("isGuestUser") === "true";
+    const isLogged = localStorage.getItem("isLogedIn") === "true";
+    
+    if (!isGuest && !isLogged) {
+        navigate("/");
+    }
+  }, [navigate]);
 
   const filteredCampaigns = campaigns.filter(c => {
     const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -116,7 +137,7 @@ export default function App() {
 
   const handleCopy = (code, id) => {
     const textArea = document.createElement("textarea");
-    textArea.value = code;
+    textArea.value = code || 'no content';
     document.body.appendChild(textArea);
     textArea.select();
     document.execCommand('copy');
@@ -133,6 +154,7 @@ export default function App() {
       asanaLink: campaign.asanaLink,
       code: campaign.code,
       imageUrl: campaign.imageUrl,
+      cwcCode: campaign.cwcCode,
       pages: campaign.pages || [campaign.code || '']
     });
     setEditingId(campaign.id);
@@ -166,7 +188,8 @@ export default function App() {
       tags: formData.tags,
       asanaLink: formData.asanaLink,
       code: finalCode,
-      imageUrl: formData.imageUrl
+      imageUrl: formData.imageUrl,
+      cwcCode: formData.cwcCode
     };
 
     const method = editingId ? 'PUT' : 'POST';
@@ -225,28 +248,56 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem("isLogedIn");
     localStorage.removeItem("isGuestUser");
-    window.location.reload();
+    // window.location.reload();
+    navigate("/"); // Replace window.location.reload() with this
   };
 
-  const handleFileUpload = async (event) => {
-       const fileValue = event.target.files[0];
-       if(!fileValue) return;
+  // Reusable core upload function
+  const uploadToCloudinary = async (fileValue) => {
+    if (!fileValue) return;
 
-       const data = new FormData();
-       data.append("file", fileValue);
-       data.append("upload_preset", "Image Upload");
-       data.append("cloud_name", "djoqxegkb")
-       console.log(fileValue);
+    const data = new FormData();
+    data.append("file", fileValue);
+    data.append("upload_preset", "Image Upload");
+    data.append("cloud_name", "djoqxegkb");
 
-        const res = await fetch("https://api.cloudinary.com/v1_1/djoqxegkb/image/upload", {
-            method: "POST",
-            body: data 
-        });
-        const uploadedImageUrl = await res.json();
-        console.log(uploadedImageUrl.url);
-        setFormData({ ...formData,  imageUrl: uploadedImageUrl.url });
-        
-  }
+    try {
+      const res = await fetch("https://api.cloudinary.com/v1_1/djoqxegkb/image/upload", {
+        method: "POST",
+        body: data 
+      });
+      const uploadedImageUrl = await res.json();
+      if (uploadedImageUrl.url) {
+        setFormData(prev => ({ ...prev, imageUrl: uploadedImageUrl.url }));
+      }
+    } catch (err) {
+      console.error("Cloudinary upload failed", err);
+    }
+  };
+
+  // Click file selection handler
+  const handleFileUpload = (event) => {
+    const fileValue = event.target.files[0];
+    uploadToCloudinary(fileValue);
+  };
+
+  // Drag handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      uploadToCloudinary(e.dataTransfer.files[0]);
+    }
+  };
 
   const userAdmin = localStorage.getItem("isLogedIn");
   const guestUser = localStorage.getItem("isGuestUser");
@@ -284,25 +335,89 @@ export default function App() {
         .page-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
         .page-tab { padding: 4px 10px; font-size: 0.7rem; background: #f1f5f9; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid var(--border); }
         .page-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .cardImage { width: 100%;height: 200px;object-fit: cover;}
+        .cardImage { width: 100%;height: 200px;object-fit: cover;object-position: top;}
         button.delete-btn:hover {color: red !important;}
+        
+        /* Drag and Drop styles */
+        .dropzone-container {
+          border: 2px dashed #9E9E9E;
+          border-radius: 10px;
+          padding: 20px;
+          text-align: center;
+          background: #fafafa;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          // flex-direction: column;
+          align-items: center;
+          justify-content: space-around;
+          gap: 8px;
+          margin-bottom: 1.25rem;
+        }
+        .dropzone-container.dragging {
+          border-color: var(--primary);
+          background: #eef2ff;
+        }
+        .dropzone-text {
+          font-size: 0.8rem;
+          color: #4b5563;
+          margin-top: 10px;
+        }
+        .dropzone-preview {
+          width: 100%;
+          max-height: 150px;
+          object-fit: cover;
+          border-radius: 6px;
+          margin-top: 0px;
+        }
+        .preview-wrapper {
+          position: relative;
+          max-width: 30%;
+          border: 1px solid;
+          border-radius: 10px;
+          padding: 10px;
+        }
+        .remove-image-btn {
+          position: absolute;
+          top: -10px;
+          right: -10px;
+          background: rgba(239, 68, 68, 0.9);
+          color: white;
+          border: none;
+          border-radius: 50%;
+          padding: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+        }
       `}</style>
 
-      <nav className="navbar">
+      {/* <nav className="navbar">
         <div className="logo" onClick={() => setView('gallery')}>
-          <div style={{color: 'white', padding: '6px', borderRadius: '8px', boxShadow: '0 10px 25px rgba(91, 61, 245, 0.25)', height:'30px'}}><img width={30} src='data:image/jpeg;base64,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' /></div>
-          <div>Campaign<span>Hub</span>
-          </div>
+          <div style={{color: 'white', padding: '6px', borderRadius: '8px', boxShadow: '0 10px 25px rgba(91, 61, 245, 0.25)', height:'30px'}}><img width={30} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1780386730/mxdccfpslyc7bmxi2vag.jpg' /></div>
+          <div>Campaign<span>Hub</span></div>
         </div>
         <div style={{display: 'flex', gap: '1rem'}}>
+          <button onClick={() => navigate("/uploader")} className={`btn ${view === 'gallery' ? 'btn-primary' : 'btn-ghost'}`}>Image Uploader</button>
           <button onClick={() => setView('gallery')} className={`btn ${view === 'gallery' ? 'btn-primary' : 'btn-ghost'}`}>Gallery</button>
-          <button onClick={() => { setEditingId(null); setFormData({type: 'Email', title: '', tags: '', asanaLink: '', code: '', pages: ['']}); setView('admin'); }} className="btn btn-primary"><Plus size={18}/> New</button>
+          <button onClick={() => { setEditingId(null); setFormData({type: 'Email', title: '', tags: '', asanaLink: '', code: '', cwcCode: '', pages: ['']}); setView('admin'); }} className="btn btn-primary"><Plus size={18}/> New</button>
           <button onClick={handleLogout} className="btn btn-ghost btn-primary">Logout</button>
           {userAdmin === "true" ? (
-            <span><img style={{width:30, display: "flex",  border:"1px solid", borderRadius:"50%", alignItems: "center", justifyContent: "center", padding: "5px"}} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1779811858/y7fopwgyjhkvpepjh6wu.png'/></span>
-          ) : <span><img  style={{width:40, display: "flex", border:"1px solid", borderRadius:"50%", alignItems: "center", justifyContent: "center"}} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1779811356/e6f4zvc1ojk4a9dj19ta.png'/></span> }
+            <span><img style={{width:30, display: "flex", border:"1px solid", borderRadius:"50%", alignItems: "center", justifyContent: "center", padding: "5px"}} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1779811858/y7fopwgyjhkvpepjh6wu.png'/></span>
+          ) : <span><img style={{width:40, display: "flex", border:"1px solid", borderRadius:"50%", alignItems: "center", justifyContent: "center"}} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1779811356/e6f4zvc1ojk4a9dj19ta.png'/></span> }
         </div>
-      </nav>
+      </nav> */}
+
+      {/* Render the new Header component here */}
+       <Header 
+         view={view} 
+         setView={setView} 
+         setEditingId={setEditingId} 
+         setFormData={setFormData} 
+         handleLogout={handleLogout} 
+       />
 
       <main className="main-content">
         {view === 'gallery' ? (
@@ -326,7 +441,7 @@ export default function App() {
                 {filteredCampaigns.map(c => (
                   <div key={c.id} className="card">
                     {/* card image */}
-                    <img className='cardImage' src={c.imageUrl || "https://res.cloudinary.com/djoqxegkb/image/upload/v1779797886/ieiiwvswdaajkg0vnxzx.png"}></img>
+                    <img className='cardImage' src={c.imageUrl || "https://res.cloudinary.com/djoqxegkb/image/upload/v1779797886/ieiiwvswdaajkg0vnxzx.png"} alt=""></img>
 
                     <div className="card-body">
                       <div style={{display: 'flex', justifyContent: 'space-between'}}>
@@ -398,11 +513,47 @@ export default function App() {
                     <input className="input" value={formData.asanaLink} onChange={e => setFormData({...formData, asanaLink: e.target.value})} placeholder="https://app.asana.com/..." />
                 </div>
               </div>
-              {/* image uploader */}
+              
+              {/* Drag and Drop Image Uploader */}
               <div style={{ marginBottom: '1.25rem'}}>
-                <label style={{display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem'}}>Insert Image File (upto 10MB)</label>
-                <input className="fileInput" style={{display:"none"}} type='file' onChange={handleFileUpload}/>
-                <button className='uploadBtn' onClick={() =>  document.querySelector(".fileInput").click()}>Upload files</button>
+                <label style={{display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem'}}>Insert Image File (up to 10MB)</label>
+                <input 
+                  className="fileInput" 
+                  style={{display:"none"}} 
+                  type='file' 
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                />
+                <div 
+                  className={`dropzone-container ${isDragging ? 'dragging' : ''}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => document.querySelector(".fileInput").click()}
+                >
+                <div>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={isDragging ? '#5d46b1' : '#9E9E9E'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <p className="dropzone-text">
+                    {isDragging ? 'Drop your image here!' : 'Drag & drop your campaign image here, or click to browse'}
+                  </p>
+                </div>
+                  {formData.imageUrl && (
+                    <div className="preview-wrapper" onClick={(e) => e.stopPropagation()}>
+                      <img className="dropzone-preview" src={formData.imageUrl} alt="Preview" />
+                      <button 
+                        type="button" 
+                        className="remove-image-btn" 
+                        onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div style={{marginBottom: '1.5rem'}}>
@@ -411,10 +562,10 @@ export default function App() {
                   {formData.type === 'onsite survey' && (
                     <div className="page-tabs">
                       {formData.pages.map((_, i) => (
-                        <div key={i} className={`page-tab ${activePageIndex === i ? 'active' : ''}`} onClick={() => setActivePageIndex(i)}>
-                          P{i+1}
+                        <button key={i} className={`page-tab ${activePageIndex === i ? 'active' : ''}`} onClick={() => setActivePageIndex(i)}>
+                          Page {i+1}
                           {formData.pages.length > 1 && <X size={10} onClick={(e) => { e.stopPropagation(); removePage(i); }}/>}
-                        </div>
+                        </button>
                       ))}
                       <button className="page-tab" onClick={addPage}><Plus size={10}/></button>
                     </div>
@@ -422,9 +573,22 @@ export default function App() {
                 </div>
                 <textarea 
                   className="input" 
-                  style={{height: '350px', fontFamily: 'monospace', fontSize: '0.8rem', background: '#0f172a', color: 'darkcyan', lineHeight: '1.5'}} 
+                  style={{height: '250px', fontFamily: 'monospace', fontSize: '0.8rem', background: '#0f172a', color: 'darkcyan', lineHeight: '1.5', marginBottom: '1.5rem'}} 
                   value={formData.type === 'onsite survey' ? formData.pages[activePageIndex] : formData.code} 
                   onChange={e => formData.type === 'onsite survey' ? updateCurrentPageCode(e.target.value) : setFormData({...formData, code: e.target.value})} 
+                  spellCheck="false" 
+                />
+
+                {/* Separate JavaScript Code Field */}
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem'}}>
+                  <label style={{fontSize: '0.8rem', fontWeight: 700}}>Custom Widget Code (CWC)</label>
+                </div>
+                <textarea 
+                  className="input" 
+                  style={{height: '150px', fontFamily: 'monospace', fontSize: '0.8rem', background: '#0f172a', color: '#60a5fa', lineHeight: '1.5'}} 
+                  value={formData.cwcCode || ''} 
+                  onChange={e => setFormData({...formData, cwcCode: e.target.value})} 
+                  placeholder="// Paste custom CWC JS code here..."
                   spellCheck="false" 
                 />
               </div>
@@ -459,14 +623,14 @@ export default function App() {
 
       {previewCampaign && (
         <div style={{position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem'}} onClick={() => setPreviewCampaign(null)}>
-          <div style={{background: 'white',padding: '1rem', borderRadius: '16px', width: '100%', maxWidth: '900px', height: '85vh', display: 'flex', flexDirection: 'column'}} onClick={e => e.stopPropagation()}>
-            <div style={{padding: '1.25rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div style={{background: 'white', padding: '1.5rem', borderRadius: '16px', width: '100%', maxWidth: '950px', height: '85vh', display: 'flex', flexDirection: 'column'}} onClick={e => e.stopPropagation()}>
+            <div style={{padding: '1.25rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px'}}>
               <div>
                 <h3 style={{margin: 0}}>{previewCampaign.title}</h3>
-                <span style={{fontSize: '0.7rem', color: '#64748b'}}>{previewCampaign.type} • {new Date(previewCampaign.date).toLocaleDateString()}</span>
+                <span style={{fontSize: '0.7rem', color: '#64748b'}}>{previewCampaign.type} • {new Date(previewCampaign.date || Date.now()).toLocaleDateString()}</span>
               </div>
               <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-                {/* Dynamically copy code by preview page context */}
+                {/* Dynamically copy page code by preview page context */}
                 <button 
                   className={`btn ${copyingId === previewCampaign.id ? 'btn-primary' : 'btn-ghost'}`} 
                   style={{padding: '6px 12px', fontSize: '0.75rem', height: '32px'}} 
@@ -480,25 +644,42 @@ export default function App() {
                   {copyingId === previewCampaign.id ? <Check size={14}/> : <Copy size={14}/>}
                   {copyingId === previewCampaign.id 
                     ? 'Copied!' 
-                    : (previewCampaign.type === 'onsite survey' ? `Copy Page ${activePageIndex + 1}` : 'Copy Code')
+                    : (previewCampaign.type === 'onsite survey' ? `HTML/CSS  Page ${activePageIndex + 1} Code` : 'HTML/CSS Code')
                   }
                 </button>
-                <button style={{background: '#f1f5f9', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifycontent: 'center'}} onClick={() => setPreviewCampaign(null)}>
+
+                {/* Option to copy CWC right beside copy page button */}
+                <button 
+                  className={`btn ${copyingId === previewCampaign.id + '_cwc' ? 'btn-primary' : 'btn-ghost'}`} 
+                  style={{padding: '6px 12px', fontSize: '0.75rem', height: '32px'}} 
+                  onClick={() => {
+                    handleCopy(previewCampaign.cwcCode || '', previewCampaign.id + '_cwc');
+                  }}
+                >
+                  {copyingId === previewCampaign.id + '_cwc' ? <Check size={14}/> : <Copy size={14}/>}
+                  {copyingId === previewCampaign.id + '_cwc' ? 'Copied!' : 'CWC'}
+                </button>
+
+                <button style={{background: '#f1f5f9', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}} onClick={() => setPreviewCampaign(null)}>
                   <X size={20}/>
                 </button>
               </div>
             </div>
             <div style={{flex: 1, background: '#cbd5e1', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden'}}>
-              
-              {previewCampaign.type === 'onsite survey' && (
-                <div className="page-tabs" style={{marginBottom: '10px'}}>
-                   {previewCampaign.pages?.map((_, i) => (
-                    <div key={i} className={`page-tab ${activePageIndex === i ? 'active' : ''}`} onClick={() => setActivePageIndex(i)}>
-                      Page {i+1}
-                    </div>
-                  ))}
-                </div>
-              )}
+
+                  {previewCampaign.type === 'onsite survey' && previewCampaign.pages && previewCampaign.pages.length > 0 && (
+                  <div className="page-tabs" style={{marginBottom: '1rem'}}>
+                    {previewCampaign.pages.map((_, i) => (
+                      <button 
+                        key={i} 
+                        className={`page-tab ${activePageIndex === i ? 'active' : ''}`} 
+                        onClick={() => setActivePageIndex(i)}
+                      >
+                        Page {i+1}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
               <iframe className="preview-frame" style={{width: '100%', maxWidth: '600px'}} srcDoc={generateIframeContent(previewCampaign.type === 'onsite survey' ? previewCampaign.pages?.[activePageIndex] : previewCampaign.code)} title="Full View" />
             </div>

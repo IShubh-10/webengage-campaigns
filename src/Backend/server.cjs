@@ -10,12 +10,20 @@ app.use(express.json());
 // ================= DB CONNECTION =================
 const db = mysql.createPool({
     host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    connectTimeout: 10000
+});
+console.log({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    database: process.env.DB_NAME
 });
 
 // db.on("connection",(con)=>{
@@ -57,16 +65,16 @@ app.get('/api/admin_credentials', (req, res) => {
 
 // POST campaign
 app.post('/api/campaigns', (req, res) => {
-    const { title, type, tags, asanaLink, code, imageUrl } = req.body;
+    const { title, type, tags, asanaLink, code, imageUrl, cwcCode } = req.body;
 
     const tagString = Array.isArray(tags) ? tags.join(', ') : tags;
 
     const sql = `
-        INSERT INTO campaigns (title, type, tags, asanaLink, code, imageUrl)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO campaigns (title, type, tags, asanaLink, code, imageUrl, cwcCode)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(sql, [title, type, tagString, asanaLink, code, imageUrl], (err, result) => {
+    db.query(sql, [title, type, tagString, asanaLink, code, imageUrl, cwcCode], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
 
         res.status(201).json({
@@ -76,7 +84,8 @@ app.post('/api/campaigns', (req, res) => {
             tags: tagString,
             asanaLink,
             code,
-            imageUrl
+            imageUrl,
+            cwcCode
         });
     });
 });
@@ -84,17 +93,17 @@ app.post('/api/campaigns', (req, res) => {
 // PUT (Update)
 app.put('/api/campaigns/:id', (req, res) => {
     const { id } = req.params;
-    const { title, type, tags, asanaLink, code, imageUrl} = req.body;
+    const { title, type, tags, asanaLink, code, imageUrl, cwcCode} = req.body;
 
     const tagString = Array.isArray(tags) ? tags.join(', ') : tags;
 
     const sql = `
         UPDATE campaigns
-        SET title=?, type=?, tags=?, asanaLink=?, code=?, imageUrl=?
+        SET title=?, type=?, tags=?, asanaLink=?, code=?, imageUrl=?, cwcCode=?
         WHERE id=?
     `;
 
-    db.query(sql, [title, type, tagString, asanaLink, code, imageUrl, id], (err, result) => {
+    db.query(sql, [title, type, tagString, asanaLink, code, imageUrl, cwcCode, id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
 
         if (result.affectedRows === 0) {
