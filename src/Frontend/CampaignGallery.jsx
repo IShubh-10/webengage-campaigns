@@ -35,7 +35,7 @@ const VIEWPORTS = {
 };
 
 // Safe fallback for API URL without using import.meta to prevent compilation warnings
-const API_BASE_URL = 'https://webengage-campaign-gallery.onrender.com/api/campaigns'; 
+  const API_BASE_URL = 'https://webengage-campaign-gallery.onrender.com/api/campaign_hub'; 
 
 export default function App() {
   const navigate = useNavigate(); // Add this
