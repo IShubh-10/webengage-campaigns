@@ -5,7 +5,7 @@ import CampaignGallery from './CampaignGallery';
 
 function App() {
   return (
-    <BrowserRouter basename="/webengage-campaign">
+    <BrowserRouter basename="/webengage-campaigns">
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/gallery" element={<CampaignGallery />} />
