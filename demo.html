@@ -1,0 +1,242 @@
+<style>
+div.container {
+    background-color: #fff !important;
+    width: 400px !important;
+    height: 470px !important;
+    max-height: 470px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 10px !important;
+}
+div.inner-container {
+    width: 100% !important;
+    height: 100% !important;
+}
+div.powered-by a {
+    display: none !important;
+}
+div.submit-field {
+    margin-top: 10px;
+}
+
+.first-div > img {
+    border-top-right-radius: 10px;
+    border-top-left-radius: 10px;
+}
+
+    input.checkbox,
+    .mac input.checkbox,
+    .mac input.radio {
+        accent-color: red;
+    }
+
+    img.img-header {
+        width: 100%;
+    }
+
+    span.vertical {
+        background: transparent;
+    }
+
+    span.vertical:hover {
+        background: transparent;
+    }
+
+    #surveyResponseFormId>fieldset>div:nth-child(9)>span {
+        display: flex;
+    }
+
+    div.field label.choice {
+        margin-left: 0px;
+    }
+
+    div.field label.question-label {
+        display: none;
+    }
+
+    p.login-sign {
+        font-size: 20px;
+        padding:15px 20px 0px 20px;
+        font-weight: 700;
+    }
+
+    #surveyResponseFormId>fieldset>div:nth-child(6)>label {
+        display: none;
+    }
+
+    input.text.helpTextEnabled {
+        width: 95% !important;
+        padding-left: 5px !important;
+        height: 31px;
+        box-shadow: none;
+        background-color: #f9f9f9;
+        border: 2px solid #cdcccc;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+
+    #surveyResponseFormId>fieldset>div:nth-child(9)>span>input {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-left: none;
+    }
+
+    select#field__2 {
+        width: 90px;
+        height: 45px;
+        text-align: -webkit-center;
+        padding: 0px;
+        color: gray;
+        font-size: 16px;
+        margin-top: 0px;
+        border-radius: 8px 0 0 8px;
+        border-right: none;
+        background-color: #f9f9f9;
+        border: 2px solid #cdcccc;
+    }
+
+    p.policy-p {
+        color: gray;
+        padding-top: 15px;
+        font-size: 10px;
+        text-align: left;
+    }
+
+    .policy-p a {
+        color: rgb(253 106 54);
+    }
+
+    input.text,
+    textarea.textarea,
+    select.select {
+        height: 35px;
+        border: none;
+        border-bottom: 1px solid;
+        border-radius: 0;
+        background: #fff;
+    }
+
+    #field__1 {
+        width: 20%;
+        height: 31px;
+        font-size: 22px;
+    }
+
+    #field_Select\ your\ \.\.\._3 {
+        font-size: 15px;
+        color: #656565;
+    }
+
+    form#surveyResponseFormId {
+        padding: 0 20px;
+    }
+
+    .mandatory {
+        display: none;
+    }
+
+    button.submit-survey.ltr {
+        margin-top: 10px;
+        background: red !important;
+        border: none;
+        width: 100%;
+    }
+
+    @media screen and (max-width: 768px) {
+        div.container {
+            width: 90% !important;
+            height: 470px !important;
+        }
+        img.img-header {
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+        }
+
+        p.login-sign {
+            font-size: 20px;
+            padding: 15px 20px 5px;
+        }
+
+        input.text.helpTextEnabled {
+            width: 94% !important;
+            font-size: 16px;
+            padding-left: 5px !important;
+            box-shadow: none;
+        }
+
+        fieldset {
+            position: relative;
+        }
+
+        select#field__2 {
+            width: 90px;
+            height: 45px;
+            padding: 0px;
+            border: 2px solid #cdcccc;
+            color: gray;
+            text-align: -webkit-center;
+            font-size: 16px;
+            margin-top: 0;
+            border-radius: 8px 0 0 8px;
+            border-right: 1px solid gray !important;
+            background-color: #f9f9f9;
+        }
+
+        p.policy-p {
+            color: gray;
+        }
+
+        .policy-p a {
+            color: rgb(253 106 54);
+        }
+    }
+</style>
+<div class="first-div">
+    <img class="img-header" src="https://afiles.webengage.com/11b565933/703265b3-4da0-42bb-8f36-81455bafc3f7.jpeg">
+</div>
+
+<p class="login-sign">Fill details to unlock the offer</p>
+<p class="policy-p">By continuing,
+    I agree to the Livspace <a target="_blank" href="https://www.livspace.com/in/interiors/service/service-terms-of-use-in">Terms of Use </a>&amp;
+    <a target="_blank" href="https://www.livspace.com/in/interiors/privacy">Privacy Policy</a>
+</p>
+
+
+<code id="myCode" style="display:none">
+
+
+    setTimeout(function() {
+        $(function() {
+            
+            $('#whatsappRow').insertBefore('#field__3');
+
+
+            $('#field__2').insertBefore('#surveyResponseFormId > fieldset > div:nth-child(9) > span > input');
+            $('p.policy-p').insertAfter('#surveyResponseFormId > fieldset > div.field.submit-field > button');
+            
+            $('#result').insertAfter('#surveyResponseFormId > fieldset > div:nth-child(9) > span > input'); //input selector
+            $("#surveyResponseFormId > fieldset > div:nth-child(9) > span > input").mouseleave(function(e) { //input selector
+                var input = $(this).val(); 
+                var pattern = /^[0-9]{10}$/; 
+                if (pattern.test(input)) {
+
+                    e.preventDefault();
+                    $('.submit-survey').css('pointer-events', 'auto'); 
+                    document.querySelector("#surveyResponseFormId > fieldset > div:nth-child(9) > span > input").style.borderBottom = '2px solid rgb(166, 166, 166)'; //input selector
+                    document.querySelector("#surveyResponseFormId > fieldset > div.field.submit-field > button").style.background = '#1e6c9d'; //submit button selector
+                    $('.error-message').text(''); 
+                    
+                } else {
+                    // Invalid input
+                    $('.submit-survey').css('pointer-events', 'none');
+                    $('.submit-survey').css('background', 'black');
+                    document.querySelector("#surveyResponseFormId > fieldset > div.field.submit-field > button").style.background = '#000'; //submit button selector
+                    $('.error-message').text('Please enter a valid 10-digit number').css('color', 'red'); 
+                    $('.error-message').insertAfter('#surveyResponseFormId > fieldset > div:nth-child(9) > span > input'); //input selector
+                }
+            });
+        });
+    }, 10);
+</code>
+<iframe style="display:none" src="about:blank" onload="eval($('#myCode').text())"></iframe>
+<p class="error-message" style="font-size: 10px;position: absolute;width: 100%;text-align: center;"></p>
