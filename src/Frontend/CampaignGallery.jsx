@@ -312,7 +312,7 @@ export default function App() {
         .logo span { color: var(--primary); }
         .main-content { max-width: 100%; margin: 2rem auto; padding: 0 1rem; }
         .filter-bar { background: white; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); display: flex; gap: 1rem; margin-bottom: 2rem; align-items: center; }
-        .input { width: -webkit-fill-available;flex: 1; padding: 0.6rem 1rem; border: 1px solid var(--border); border-radius: 8px; outline: none; }
+        .input { width: -webkit-fill-available; flex: 1; padding: 0.6rem 1rem; border: 1px solid var(--border); border-radius: 8px; outline: none; }
         .campaign-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
         .card { background: white; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; transition: transform 0.2s; display: flex; flex-direction: column; position: relative; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
@@ -394,6 +394,18 @@ export default function App() {
           justify-content: center;
 
         }
+          @media (max-width: 767px) {
+            .navbar {
+              flex-direction: column;
+              gap: 20px;
+            }
+            .filter-bar {
+              gap:10px;
+            }
+            select.input {
+              max-width: 105px !important;
+            }
+          }
       `}</style>
 
       {/* <nav className="navbar">
@@ -427,7 +439,7 @@ export default function App() {
             <div className="filter-bar">
               <Search size={18} color="#64748b"/>
               <input className="input" placeholder="Search campaigns..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-              <select className="input" style={{maxWidth: '150px'}} value={selectedType} onChange={e => setSelectedType(e.target.value)}>
+              <select className="input" style={{maxWidth:'150px'}} value={selectedType} onChange={e => setSelectedType(e.target.value)}>
                 <option value="All">All Types</option>
                 {CAMPAIGN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>

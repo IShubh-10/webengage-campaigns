@@ -165,7 +165,7 @@ const Header = ({ view, setView, setEditingId, setFormData, handleLogout }) => {
           <span>
             <img 
               style={{width:30, display: "flex", border:"1px solid", borderRadius:"50%", alignItems: "center", justifyContent: "center", padding: "5px"}} 
-              src='https://res.cloudinary.com/djoqxegkb/image/upload/v1779811858/y7fopwgyjhkvpepjh6wu.png' 
+              src='https://res.cloudinary.com/djoqxegkb/image/upload/v1783148634/bkmbwrhh8lzu72tlwkby.webp' 
               alt="Admin Profile"
             />
           </span>
