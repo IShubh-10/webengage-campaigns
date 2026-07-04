@@ -577,6 +577,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${t}Chann
             .input {
               width: 80% !important;
             }
+              
             #root > div > nav > div:nth-child(2) {
               gap: 5px !important;
             }
