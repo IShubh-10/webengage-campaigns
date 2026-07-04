@@ -400,7 +400,7 @@ export default function App() {
               gap: 20px;
             }
             .filter-bar {
-              gap:10px;
+              gap:10px !important;
             }
             select.input {
               max-width: 105px !important;
