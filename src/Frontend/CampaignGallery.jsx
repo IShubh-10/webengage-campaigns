@@ -403,7 +403,13 @@ export default function App() {
               gap:10px !important;
             }
             select.input {
-              max-width: 105px !important;
+              max-width: 100px !important;
+              width: 100% !important;
+              padding: 0.6rem 0px;
+              text-align: center;
+            }
+            .input {
+              width: 80%;
             }
           }
       `}</style>
