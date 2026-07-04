@@ -409,7 +409,10 @@ export default function App() {
               text-align: center;
             }
             .input {
-              width: 80%;
+              width: 80% !important;
+            }
+            #root > div > nav > div:nth-child(2) {
+              gap: 5px !important;
             }
           }
       `}</style>
