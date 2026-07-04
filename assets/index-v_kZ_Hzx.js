@@ -566,7 +566,7 @@ To suppress this warning, you need to explicitly provide the \`palette.${t}Chann
               gap: 20px;
             }
             .filter-bar {
-              gap:10px;
+              gap:10px !important;
             }
             select.input {
               max-width: 105px !important;
