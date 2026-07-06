@@ -411,7 +411,7 @@ export default function App() {
             .input {
               width: 80% !important;
             }
-              
+
             #root > div > nav > div:nth-child(2) {
               gap: 5px !important;
             }
@@ -456,8 +456,8 @@ export default function App() {
             </div>
 
             {loading ? (
-              <div className="loading-state">
-                <RefreshCw size={32} className="animate-spin" style={{margin: '0 auto 1rem'}}/>
+              <div className="loading-state" style={{textAlign:'center'}}>
+                <span><img style={{width:'40px'}} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1783343069/x3zsjb2kx4j2csys1frm.gif'/></span>
                 <p>Loading campaigns from server...</p>
               </div>
             ) : (
