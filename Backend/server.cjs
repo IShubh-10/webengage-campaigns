@@ -19,18 +19,13 @@ const db = mysql.createPool({
     queueLimit: 0,
     connectTimeout: 10000
 });
+
 console.log({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     user: process.env.DB_USER,
     database: process.env.DB_NAME
 });
-
-// db.on("connection",(con)=>{
-//     if(con){
-//         console.log("Connection established")
-//     }
-// })
 
 // Check DB connection
 db.getConnection((err, conn) => {
@@ -65,16 +60,21 @@ app.get('/api/admin_credentials', (req, res) => {
 
 // POST campaign
 app.post('/api/campaign_hub', (req, res) => {
-    const { title, type, tags, asanaLink, code, imageUrl, cwcCode } = req.body;
+    
+     console.log(req.body);
+    // Extracted the 'created_by' field containing the email from the client body payload
+    const { title, type, tags, asanaLink, code, imageUrl, cwcCode, created_by } = req.body;
 
     const tagString = Array.isArray(tags) ? tags.join(', ') : tags;
+    // Fallback default value if no valid email identifier is provided
+    const creatorEmail = created_by || 'Unknown Admin'; 
 
     const sql = `
-        INSERT INTO campaign_hub (title, type, tags, asanaLink, code, imageUrl, cwcCode)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO campaign_hub (title, type, tags, asanaLink, code, imageUrl, cwcCode, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(sql, [title, type, tagString, asanaLink, code, imageUrl, cwcCode], (err, result) => {
+    db.query(sql, [title, type, tagString, asanaLink, code, imageUrl, cwcCode, creatorEmail], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
 
         res.status(201).json({
@@ -85,7 +85,8 @@ app.post('/api/campaign_hub', (req, res) => {
             asanaLink,
             code,
             imageUrl,
-            cwcCode
+            cwcCode,
+            created_by: creatorEmail
         });
     });
 });
@@ -93,17 +94,18 @@ app.post('/api/campaign_hub', (req, res) => {
 // PUT (Update)
 app.put('/api/campaign_hub/:id', (req, res) => {
     const { id } = req.params;
-    const { title, type, tags, asanaLink, code, imageUrl, cwcCode} = req.body;
+    const { title, type, tags, asanaLink, code, imageUrl, cwcCode, created_by } = req.body;
 
     const tagString = Array.isArray(tags) ? tags.join(', ') : tags;
+    const creatorEmail = created_by || 'Unknown Admin';
 
     const sql = `
         UPDATE campaign_hub
-        SET title=?, type=?, tags=?, asanaLink=?, code=?, imageUrl=?, cwcCode=?
+        SET title=?, type=?, tags=?, asanaLink=?, code=?, imageUrl=?, cwcCode=?, created_by=?
         WHERE id=?
     `;
 
-    db.query(sql, [title, type, tagString, asanaLink, code, imageUrl, cwcCode, id], (err, result) => {
+    db.query(sql, [title, type, tagString, asanaLink, code, imageUrl, cwcCode, creatorEmail, id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
 
         if (result.affectedRows === 0) {

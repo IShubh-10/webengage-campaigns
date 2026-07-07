@@ -37,6 +37,10 @@ const VIEWPORTS = {
 // Safe fallback for API URL without using import.meta to prevent compilation warnings
   const API_BASE_URL = 'https://webengage-campaign-gallery.onrender.com/api/campaign_hub'; 
 
+  // logged in user
+  const loggedInUser = localStorage.getItem("userIdentifier");
+  const isSuperAdmin = loggedInUser === "superadmin";
+
 export default function App() {
   const navigate = useNavigate(); // Add this
 
@@ -189,7 +193,8 @@ export default function App() {
       asanaLink: formData.asanaLink,
       code: finalCode,
       imageUrl: formData.imageUrl,
-      cwcCode: formData.cwcCode
+      cwcCode: formData.cwcCode,
+      created_by: localStorage.getItem("userIdentifier")
     };
 
     const method = editingId ? 'PUT' : 'POST';
@@ -418,22 +423,6 @@ export default function App() {
           }
       `}</style>
 
-      {/* <nav className="navbar">
-        <div className="logo" onClick={() => setView('gallery')}>
-          <div style={{color: 'white', padding: '6px', borderRadius: '8px', boxShadow: '0 10px 25px rgba(91, 61, 245, 0.25)', height:'30px'}}><img width={30} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1780386730/mxdccfpslyc7bmxi2vag.jpg' /></div>
-          <div>Campaign<span>Hub</span></div>
-        </div>
-        <div style={{display: 'flex', gap: '1rem'}}>
-          <button onClick={() => navigate("/uploader")} className={`btn ${view === 'gallery' ? 'btn-primary' : 'btn-ghost'}`}>Image Uploader</button>
-          <button onClick={() => setView('gallery')} className={`btn ${view === 'gallery' ? 'btn-primary' : 'btn-ghost'}`}>Gallery</button>
-          <button onClick={() => { setEditingId(null); setFormData({type: 'Email', title: '', tags: '', asanaLink: '', code: '', cwcCode: '', pages: ['']}); setView('admin'); }} className="btn btn-primary"><Plus size={18}/> New</button>
-          <button onClick={handleLogout} className="btn btn-ghost btn-primary">Logout</button>
-          {userAdmin === "true" ? (
-            <span><img style={{width:30, display: "flex", border:"1px solid", borderRadius:"50%", alignItems: "center", justifyContent: "center", padding: "5px"}} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1779811858/y7fopwgyjhkvpepjh6wu.png'/></span>
-          ) : <span><img style={{width:40, display: "flex", border:"1px solid", borderRadius:"50%", alignItems: "center", justifyContent: "center"}} src='https://res.cloudinary.com/djoqxegkb/image/upload/v1779811356/e6f4zvc1ojk4a9dj19ta.png'/></span> }
-        </div>
-      </nav> */}
-
       {/* Render the new Header component here */}
        <Header 
          view={view} 
@@ -470,11 +459,23 @@ export default function App() {
                     <div className="card-body">
                       <div style={{display: 'flex', justifyContent: 'space-between'}}>
                         <span style={{fontSize: '0.65rem', fontWeight: 800, background: '#eef2ff', color: 'var(--primary)', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase'}}>{c.type}</span>
-                        {userAdmin === "true" ? (
+                        
+                        {/* {userAdmin === "true" ? (
                         <button onClick={() => handleDelete(c.id)} style={{border: 'none', background: 'none', color: '#cbd5e1', cursor: 'pointer'}} title="Delete" className="delete-btn">
                           <Trash2 size={14}/>
                         </button>
-                        ) : null }
+                        ) : null } */}
+
+                          {(isSuperAdmin || c.created_by === loggedInUser) && (
+                            <button
+                              onClick={() => handleDelete(c.id)}
+                              style={{ border: "none", background: "none", color: "#cbd5e1", cursor: "pointer" }}
+                              title="Delete"
+                              className="delete-btn"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                       </div>
                       <h3 className="card-title">{c.title}</h3>
                       <div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px', justifyContent:'space-between'}}>
@@ -489,9 +490,14 @@ export default function App() {
                     <div className="card-footer" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                       <div style={{display:'flex'}}>
                       <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => { setActivePageIndex(0); setPreviewCampaign(c); }} title="Full Preview"><Eye size={14}/></button>
-                      {userAdmin === "true" ? (
+                      
+                      {/* {userAdmin === "true" ? (
                       <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => startEdit(c)} title="Edit Campaign"><Edit3 size={14}/></button>
-                      ) : null }
+                      ) : null } */}
+
+                      {(isSuperAdmin || c.created_by === loggedInUser) && (
+                      <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => startEdit(c)} title="Edit Campaign"><Edit3 size={14}/></button>
+                      )}
                       {/* Copy strictly page 1 code for survey campaign cards, or standard code for others */}
                       <button 
                         className={`btn ${copyingId === c.id ? 'btn-primary' : 'btn-ghost action-btns'}`} 

@@ -8,6 +8,7 @@ const Header = ({ view, setView, setEditingId, setFormData, handleLogout }) => {
   
   // Read admin state directly from localStorage to keep props clean
   const userAdmin = localStorage.getItem("isLogedIn");
+  const guestUser = localStorage.getItem("isGuestUser");
 
   const handleLogoOrGalleryClick = () => {
     if (setView) setView('gallery');
@@ -151,14 +152,16 @@ const Header = ({ view, setView, setEditingId, setFormData, handleLogout }) => {
         </button>
 
         {/* Create New Campaign Button */}
-        <button onClick={handleNewCampaignClick} className="btn btn-primary">
-          <Plus size={18}/> New
-        </button>
+        {userAdmin === "true" ? (
+          <button onClick={handleNewCampaignClick} className="btn btn-primary">
+            <Plus size={18}/> New
+          </button>
+        ) : null }
 
         {/* Logout Button */}
-        <button onClick={handleLogout} className="btn btn-ghost btn-primary">
-          Logout
-        </button>
+          <button onClick={handleLogout} className="btn btn-ghost btn-primary">
+            Logout
+          </button>
 
         {/* User Profile Avatar */}
         {userAdmin === "true" ? (

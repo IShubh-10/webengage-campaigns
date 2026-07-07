@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Add this
+import { useNavigate } from "react-router-dom";
 
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-// import CampaignGallery from "./CampaignGallery";
+
+// Strict whitelist of authorized usernames and WebEngage Admin email addresses
+const ALLOWED_ADMIN_EMAILS = [
+    "superadmin",
+    "shubham.kadam@webengage.com",
+    "suraj.gupta@webengage.com",
+    "niraj.jain@webengage.com",
+    "ayushi.jain@webengage.com",
+    "prathamesh.shivekar@webengage.com"
+];
 
 const Login = () => {
-    const navigate = useNavigate(); // Add this
+    const navigate = useNavigate();
     const [adminUsers, setAdminUsers] = useState([]);
-    // const [viewGuest, setViewGuest] = useState(false);
 
     // DB values
     const [dbUsername, setDbUsername] = useState("");
@@ -20,19 +28,25 @@ const Login = () => {
 
     const [message, setMessage] = useState("");
 
-    // login
-    // const [isLogedIn, setisLogedIn] = useState(false);
-
     // password toggle
     const [showPassword, setShowPassword] = useState(false);
 
-    const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL;
+    // Safely extract environment variables without triggering ES2015 build warnings
+    let ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL;
 
-    // ================= FETCH ADMIN USERS =================
+    try {
+        const env = new Function("return import.meta.env")();
+        if (env && env.VITE_ADMIN_API_URL) {
+            ADMIN_API_URL = env.VITE_ADMIN_API_URL;
+        }
+    } catch (e) {
+        // Fall back to default parameter
+    }
+
     useEffect(() => {
         fetchAdminUsers();
 
-        // Add this check to automatically push logged-in users to the gallery
+        // Redirect already logged-in users
         const isGuest = localStorage.getItem("isGuestUser") === "true";
         const isLogged = localStorage.getItem("isLogedIn") === "true";
         
@@ -53,42 +67,51 @@ const Login = () => {
                 setDbPassword(data[0].userpassword);
             }
         } catch (error) {
-            console.error("❌ Error fetching:", error);
+            console.error("❌ Error fetching credentials:", error);
         }
     };
 
-    // ================= LOGIN =================
     const handleLogin = () => {
-        if (username === dbUsername && password === dbPassword) {
+        const inputUserLower = username.toLowerCase().trim();
+
+        // 1. Strict Whitelist Check: Block non-whitelisted email domains/usernames before checking passwords
+        if (!ALLOWED_ADMIN_EMAILS.includes(inputUserLower)) {
+            setMessage("❌ Access Blocked: Your email is not whitelisted for admin privileges please login as a guest user.");
+            localStorage.setItem("isLogedIn", "false");
+            return;
+        }
+
+        // 2. Query/Match manual input against list of database credentials
+        const matchedDbUser = adminUsers.find(
+            (u) => u.username.toLowerCase() === inputUserLower && u.userpassword === password
+        );
+
+        // Check if matching whitelisted database record was found with correct password
+        if (matchedDbUser) {
+            const assignedRole = matchedDbUser.role || "admin";
+
             setMessage("Login successful");
-            // setisLogedIn(true);
-            localStorage.setItem("isLogedIn", true);
-            navigate("/gallery"); // Replaces setisLogedIn(true)
+            localStorage.setItem("isLogedIn", "true");
+            localStorage.setItem("userRole", assignedRole);
+            localStorage.setItem("userIdentifier", inputUserLower);
+            localStorage.setItem("userName", inputUserLower.split('@')[0]);
+            
+            navigate("/gallery");
         } else {
-            setMessage("Invalid username or password");
-            // setisLogedIn(false);
-            localStorage.setItem("isLogedIn", false);
+            setMessage("❌ Invalid username or password");
+            localStorage.setItem("isLogedIn", "false");
         }
     };
 
     const handleGuest = () => {
-        // setViewGuest(true);
-        localStorage.setItem("isGuestUser", true);
-        navigate("/gallery"); // Replaces setViewGuest(true)
+        localStorage.setItem("isGuestUser", "true");
+        localStorage.setItem("userRole", "guest");
+        localStorage.setItem("userIdentifier", "Guest");
+        navigate("/gallery");
     };
-
-    // const guestUser = localStorage.getItem("isGuestUser");
-    // if (viewGuest || (guestUser && guestUser !== "false")) {
-    //     return <CampaignGallery />;
-    // }
-    // const loginState = localStorage.getItem("isLogedIn");
-    // if ((isLogedIn || loginState) && loginState !== "false") {
-    //     return <CampaignGallery />;
-    // }
 
     return (
         <>
-        {/* <AI/> */}
             <style>
                 {`
                 *{
@@ -138,7 +161,6 @@ const Login = () => {
                     width:48px;
                     height:48px;
                     border-radius:14px;
-                    // background:linear-gradient(135deg,#5B3DF5,#7C66FF);
                     display:flex;
                     align-items:center;
                     justify-content:center;
@@ -217,7 +239,7 @@ const Login = () => {
                     height:58px;
                     border:none;
                     border-radius:14px;
-                    background:#5b21b6;
+                    background:linear-gradient(135deg, #4d47b3, #583892);
                     color:#fff;
                     font-size:16px;
                     font-weight:700;
@@ -255,13 +277,16 @@ const Login = () => {
                     text-align: center;
                     font-size: 14px;
                     color: red;
+                    line-height: 1.5;
                 }
 
                 /* ================= RIGHT PANEL ================= */
 
                 .login-right{
                     width:54%;
-                    background:#0d111d;
+                    background:
+                        radial-gradient(circle at top right, rgba(124,102,255,0.18), transparent 30%),
+                        linear-gradient(135deg,#0f172a,#111827);
                     padding:60px;
                     display:flex;
                     align-items:center;
@@ -287,6 +312,7 @@ const Login = () => {
                     border:1px solid rgba(255,255,255,0.08);
                     color:#c7d2fe;
                     font-size:13px;
+                    font-weight:600;
                     margin-bottom:24px;
                 }
 
@@ -400,7 +426,7 @@ const Login = () => {
                     width:78%;
                     height:100%;
                     border-radius:999px;
-                    background:#5b21b6;
+                    background:linear-gradient(90deg,#7C66FF,#A78BFA);
                 }
 
                 /* ================= MOBILE ================= */
@@ -458,7 +484,7 @@ const Login = () => {
                         <div className="brand">
 
                             <div className="brand-logo">
-                                <img width={40} src="https://res.cloudinary.com/djoqxegkb/image/upload/v1780386730/mxdccfpslyc7bmxi2vag.jpg" />
+                                <img width={40} src="https://res.cloudinary.com/djoqxegkb/image/upload/v1780386730/mxdccfpslyc7bmxi2vag.jpg" alt="Logo" />
                             </div>
 
                             <div className="brand-text">
@@ -476,18 +502,18 @@ const Login = () => {
                         </p>
 
                         {message && (
-                            <p className="message">
+                            <p className="message" style={{ color: message.includes("successful") ? "#10b981" : "red" }}>
                                 {message}
                             </p>
                         )}
 
                         <div className="input-group">
 
-                            <label>Username</label>
+                            <label>WebEngage Admin Email</label>
 
                             <input
                                 type="text"
-                                placeholder="Enter your username"
+                                placeholder="Enter whitelisted email address"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                             />
@@ -500,7 +526,7 @@ const Login = () => {
 
                             <input
                                 type={showPassword ? "text" : "password"}
-                                placeholder="Enter your password"
+                                placeholder="Enter secure password"
                                 value={password}
                                 onChange={(e) => setUserPassword(e.target.value)}
                             />
