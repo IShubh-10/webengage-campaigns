@@ -37,10 +37,6 @@ const VIEWPORTS = {
 // Safe fallback for API URL without using import.meta to prevent compilation warnings
   const API_BASE_URL = 'https://webengage-campaign-gallery.onrender.com/api/campaign_hub'; 
 
-  // logged in user
-  const loggedInUser = localStorage.getItem("userIdentifier");
-  const isSuperAdmin = loggedInUser === "superadmin";
-
 export default function App() {
   const navigate = useNavigate(); // Add this
 
@@ -78,7 +74,15 @@ export default function App() {
       return;
     }
     try {
-      const response = await fetch(API_BASE_URL);
+      const isSuperAdmin =
+        localStorage.getItem("userIdentifier") === "ADMIN";
+
+      const url = isSuperAdmin
+          ? `${API_BASE_URL}?showDeleted=true`
+          : API_BASE_URL;
+
+      const response = await fetch(url);
+      // const response = await fetch(API_BASE_URL);
       if (!response.ok) throw new Error('Failed to fetch campaigns');
       const data = await response.json();
       
@@ -171,7 +175,7 @@ export default function App() {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Delete failed');
-      setCampaigns(campaigns.filter(c => c.id !== id));
+      await fetchCampaigns();
     } catch (err) {
       setError('Failed to delete campaign');
     }
@@ -451,75 +455,91 @@ export default function App() {
               </div>
             ) : (
               <div className="campaign-grid">
-                {filteredCampaigns.map(c => (
-                  <div key={c.id} className="card">
-                    {/* card image */}
-                    <img className='cardImage' src={c.imageUrl || "https://res.cloudinary.com/djoqxegkb/image/upload/v1779797886/ieiiwvswdaajkg0vnxzx.png"} alt=""></img>
+                {filteredCampaigns.map(c => {
+                  const loggedInUser = localStorage.getItem("userIdentifier");
+                  const isSuperAdmin = loggedInUser === "superadmin";
 
-                    <div className="card-body">
-                      <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                        <span style={{fontSize: '0.65rem', fontWeight: 800, background: '#eef2ff', color: 'var(--primary)', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase'}}>{c.type}</span>
+                  const canEdit =
+                    c.status === "Active" &&
+                    (isSuperAdmin || c.created_by === loggedInUser);
+
+                  const canDelete =
+                    c.status === "Active" &&
+                    (isSuperAdmin || c.created_by === loggedInUser);
+                    return (
+                    <div key={c.id} className="card">
+                      {/* card image */}
+                      <img className='cardImage' src={c.imageUrl || "https://res.cloudinary.com/djoqxegkb/image/upload/v1779797886/ieiiwvswdaajkg0vnxzx.png"} alt=""></img>
+
+                      <div className="card-body">
+                        <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                          <span style={{fontSize: '0.65rem', fontWeight: 800, background: '#eef2ff', color: 'var(--primary)', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase'}}>{c.type}</span>
+                          
+                          {/* {userAdmin === "true" ? (
+                          <button onClick={() => handleDelete(c.id)} style={{border: 'none', background: 'none', color: '#cbd5e1', cursor: 'pointer'}} title="Delete" className="delete-btn">
+                            <Trash2 size={14}/>
+                          </button>
+                          ) : null } */}
+
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDelete(c.id)}
+                                style={{ border: "none", background: "none", color: "#cbd5e1", cursor: "pointer" }}
+                                title="Delete"
+                                className="delete-btn"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                        </div>
+                        <h3 className="card-title">{c.title}</h3>
+                        <div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px', justifyContent:'space-between'}}>
+                          {Array.isArray(c.tags) && c.tags.map(t => <span key={t} style={{fontSize: '0.7rem', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px'}}>#{t}</span>)}
+                          {/* <span style={{fontSize:'0.75rem', color:'#64748b'}}>{new Date(c.date || Date.now()).toLocaleDateString()}</span> */}
+                        </div>
+                        <div className="card-meta">
+                          <span>{new Date(c.date || Date.now()).toLocaleDateString()}</span>
+                          {userAdmin === "true" ? (
+                            <span>Created by - {c.created_by ? c.created_by.split("@")[0].split(".")[0].charAt(0).toUpperCase() + c.created_by.split("@")[0].split(".")[0].slice(1) : ""}</span>
+                          ) : null }
+                          {/* {c.asanaLink && <a href={c.asanaLink} target="_blank" rel="noreferrer" style={{color: 'var(--primary)'}} title="Open Asana Task"><ExternalLink size={14}/></a>} */}
+                        </div>
+                      </div>
+                      <div className="card-footer" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                        <div style={{display:'flex'}}>
+                        <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => { setActivePageIndex(0); setPreviewCampaign(c); }} title="Full Preview"><Eye size={14}/></button>
                         
                         {/* {userAdmin === "true" ? (
-                        <button onClick={() => handleDelete(c.id)} style={{border: 'none', background: 'none', color: '#cbd5e1', cursor: 'pointer'}} title="Delete" className="delete-btn">
-                          <Trash2 size={14}/>
-                        </button>
+                        <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => startEdit(c)} title="Edit Campaign"><Edit3 size={14}/></button>
                         ) : null } */}
 
-                          {(isSuperAdmin || c.created_by === loggedInUser) && (
-                            <button
-                              onClick={() => handleDelete(c.id)}
-                              style={{ border: "none", background: "none", color: "#cbd5e1", cursor: "pointer" }}
-                              title="Delete"
-                              className="delete-btn"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
+                        
+                        {canEdit && (
+                        <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => startEdit(c)} title="Edit Campaign"><Edit3 size={14}/></button>
+                        )}
+                        {/* Copy strictly page 1 code for survey campaign cards, or standard code for others */}
+                        <button 
+                          className={`btn ${copyingId === c.id ? 'btn-primary' : 'btn-ghost action-btns'}`} 
+                          style={{padding: '8px', fontSize: '0.75rem'}} 
+                          onClick={() => {
+                            const codeToCopy = c.type === 'onsite survey' 
+                              ? (c.pages?.[0] || "") 
+                              : c.code;
+                            handleCopy(codeToCopy, c.id);
+                          }} 
+                          title={c.type === 'onsite survey' ? "copy first page code" : "Copy Code"}
+                        >
+                          {copyingId === c.id ? <Check size={14}/> : <Copy size={14}/>}
+                        </button>
+                        </div>
+                        <div>
+                          {c.asanaLink && <a href={c.asanaLink} target="_blank" rel="noreferrer" style={{color: 'var(--primary)'}} title="Open Asana Task"><ExternalLink size={14}/></a>}
+                        </div>
                       </div>
-                      <h3 className="card-title">{c.title}</h3>
-                      <div style={{display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '10px', justifyContent:'space-between'}}>
-                        {Array.isArray(c.tags) && c.tags.map(t => <span key={t} style={{fontSize: '0.7rem', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px'}}>#{t}</span>)}
-                        {/* <span style={{fontSize:'0.75rem', color:'#64748b'}}>{new Date(c.date || Date.now()).toLocaleDateString()}</span> */}
-                      </div>
-                      <div className="card-meta">
-                        <span>{new Date(c.date || Date.now()).toLocaleDateString()}</span>
-                        {/* {c.asanaLink && <a href={c.asanaLink} target="_blank" rel="noreferrer" style={{color: 'var(--primary)'}} title="Open Asana Task"><ExternalLink size={14}/></a>} */}
-                      </div>
-                    </div>
-                    <div className="card-footer" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                      <div style={{display:'flex'}}>
-                      <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => { setActivePageIndex(0); setPreviewCampaign(c); }} title="Full Preview"><Eye size={14}/></button>
-                      
-                      {/* {userAdmin === "true" ? (
-                      <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => startEdit(c)} title="Edit Campaign"><Edit3 size={14}/></button>
-                      ) : null } */}
 
-                      {(isSuperAdmin || c.created_by === loggedInUser) && (
-                      <button className="btn btn-ghost action-btns" style={{padding: '8px', fontSize: '0.75rem'}} onClick={() => startEdit(c)} title="Edit Campaign"><Edit3 size={14}/></button>
-                      )}
-                      {/* Copy strictly page 1 code for survey campaign cards, or standard code for others */}
-                      <button 
-                        className={`btn ${copyingId === c.id ? 'btn-primary' : 'btn-ghost action-btns'}`} 
-                        style={{padding: '8px', fontSize: '0.75rem'}} 
-                        onClick={() => {
-                          const codeToCopy = c.type === 'onsite survey' 
-                            ? (c.pages?.[0] || "") 
-                            : c.code;
-                          handleCopy(codeToCopy, c.id);
-                        }} 
-                        title={c.type === 'onsite survey' ? "copy first page code" : "Copy Code"}
-                      >
-                        {copyingId === c.id ? <Check size={14}/> : <Copy size={14}/>}
-                      </button>
-                      </div>
-                      <div>
-                        {c.asanaLink && <a href={c.asanaLink} target="_blank" rel="noreferrer" style={{color: 'var(--primary)'}} title="Open Asana Task"><ExternalLink size={14}/></a>}
-                      </div>
                     </div>
-
-                  </div>
-                ))}
+                    );
+                })}
               </div>
             )}
           </>
@@ -717,7 +737,7 @@ export default function App() {
                     ))}
                   </div>
                 )}
-
+              
               <iframe className="preview-frame" style={{width: '100%', maxWidth: '600px'}} srcDoc={generateIframeContent(previewCampaign.type === 'onsite survey' ? previewCampaign.pages?.[activePageIndex] : previewCampaign.code)} title="Full View" />
             </div>
           </div>

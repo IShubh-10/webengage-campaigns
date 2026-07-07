@@ -40,9 +40,27 @@ db.getConnection((err, conn) => {
 // ================= ROUTES =================
 
 // GET all campaign_hub
+// app.get('/api/campaign_hub', (req, res) => {
+//     db.query('SELECT * FROM campaign_hub ORDER BY id DESC', (err, results) => {
+//         if (err) return res.status(500).json({ error: err.message });
+//         res.json(results);
+//     });
+// });
 app.get('/api/campaign_hub', (req, res) => {
-    db.query('SELECT * FROM campaign_hub ORDER BY id DESC', (err, results) => {
+
+    const showDeleted = req.query.showDeleted === "true";
+
+    let sql;
+
+    if (showDeleted) {
+        sql = "SELECT * FROM campaign_hub ORDER BY id DESC";
+    } else {
+        sql = "SELECT * FROM campaign_hub WHERE status='Active' ORDER BY id DESC";
+    }
+
+    db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
+
         res.json(results);
     });
 });
@@ -60,8 +78,6 @@ app.get('/api/admin_credentials', (req, res) => {
 
 // POST campaign
 app.post('/api/campaign_hub', (req, res) => {
-    
-     console.log(req.body);
     // Extracted the 'created_by' field containing the email from the client body payload
     const { title, type, tags, asanaLink, code, imageUrl, cwcCode, created_by } = req.body;
 
@@ -117,14 +133,37 @@ app.put('/api/campaign_hub/:id', (req, res) => {
 });
 
 // DELETE
+// app.delete('/api/campaign_hub/:id', (req, res) => {
+//     const { id } = req.params;
+
+//     db.query("UPDATE campaign_hub SET status='Deleted' WHERE id=?", [id], (err) => {
+//         if (err) return res.status(500).json({ error: err.message });
+
+//         res.json({ message: 'Campaign deleted successfully' });
+//     });
+// });
 app.delete('/api/campaign_hub/:id', (req, res) => {
     const { id } = req.params;
 
-    db.query('DELETE FROM campaign_hub WHERE id = ?', [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+    console.log("Deleting campaign:", id);
 
-        res.json({ message: 'Campaign deleted successfully' });
-    });
+    db.query(
+        "UPDATE campaign_hub SET status = 'Deleted' WHERE id = ?",
+        [id],
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                return res.status(500).json({ error: err.message });
+            }
+
+            console.log(result);
+
+            res.json({
+                affectedRows: result.affectedRows,
+                changedRows: result.changedRows
+            });
+        }
+    );
 });
 
 // ================= SERVER =================
