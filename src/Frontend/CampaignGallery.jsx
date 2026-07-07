@@ -75,7 +75,7 @@ export default function App() {
     }
     try {
       const isSuperAdmin =
-        localStorage.getItem("userIdentifier") === "ADMIN";
+        localStorage.getItem("userIdentifier") === "superadmin";
 
       const url = isSuperAdmin
           ? `${API_BASE_URL}?showDeleted=true`
