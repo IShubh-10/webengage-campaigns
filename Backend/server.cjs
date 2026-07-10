@@ -66,14 +66,57 @@ app.get('/api/campaign_hub', (req, res) => {
 });
 
 // GET all admin users
-app.get('/api/admin_credentials', (req, res) => {
-    db.query('SELECT * FROM admin_credentials ORDER BY id DESC', (err, results) => {
-       if (err) {
-                console.log(err);
-                return res.status(500).json({ error: err.message });
+app.post("/api/admin_credentials", (req, res) => {
+
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({
+            success: false,
+            message: "Username and password are required."
+        });
+    }
+
+    // FIX: table only has id, username, userpassword -- no "role" column.
+    // Selecting "role" caused ER_BAD_FIELD_ERROR (1054) -> 500 on every login.
+    const sql = `
+        SELECT id, username
+        FROM admin_credentials
+        WHERE LOWER(username) = LOWER(?)
+        AND userpassword = ?
+        LIMIT 1
+    `;
+
+    db.query(sql, [username.trim(), password], (err, results) => {
+
+        if (err) {
+            console.error(err);
+            return res.status(500).json({
+                success: false,
+                message: "Server error"
+            });
+        }
+
+        if (results.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid username or password"
+            });
+        }
+
+        const user = results[0];
+
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                username: user.username,
+                role: "admin" // no role column in DB, every whitelisted login is admin
             }
-        res.json(results);
+        });
+
     });
+
 });
 
 // POST campaign

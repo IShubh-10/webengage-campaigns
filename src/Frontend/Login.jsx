@@ -18,11 +18,6 @@ const ALLOWED_ADMIN_EMAILS = [
 
 const Login = () => {
     const navigate = useNavigate();
-    const [adminUsers, setAdminUsers] = useState([]);
-
-    // DB values
-    const [dbUsername, setDbUsername] = useState("");
-    const [dbPassword, setDbPassword] = useState("");
 
     // Input values
     const [username, setUsername] = useState("");
@@ -33,76 +28,74 @@ const Login = () => {
     // password toggle
     const [showPassword, setShowPassword] = useState(false);
 
-    // Safely extract environment variables without triggering ES2015 build warnings
-    let ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL;
-
-    try {
-        const env = new Function("return import.meta.env")();
-        if (env && env.VITE_ADMIN_API_URL) {
-            ADMIN_API_URL = env.VITE_ADMIN_API_URL;
-        }
-    } catch (e) {
-        // Fall back to default parameter
-    }
-
     useEffect(() => {
-        fetchAdminUsers();
-
         // Redirect already logged-in users
         const isGuest = localStorage.getItem("isGuestUser") === "true";
         const isLogged = localStorage.getItem("isLogedIn") === "true";
-        
+
         if (isGuest || isLogged) {
             navigate("/gallery");
         }
     }, [navigate]);
 
-    const fetchAdminUsers = async () => {
-        try {
-            const response = await fetch(ADMIN_API_URL);
-            const data = await response.json();
+    const handleLogin = async () => {
 
-            setAdminUsers(data);
-
-            if (data.length > 0) {
-                setDbUsername(data[0].username);
-                setDbPassword(data[0].userpassword);
-            }
-        } catch (error) {
-            console.error("❌ Error fetching credentials:", error);
-        }
-    };
-
-    const handleLogin = () => {
         const inputUserLower = username.toLowerCase().trim();
 
-        // 1. Strict Whitelist Check: Block non-whitelisted email domains/usernames before checking passwords
         if (!ALLOWED_ADMIN_EMAILS.includes(inputUserLower)) {
-            setMessage("❌ Access Blocked: Your email is not whitelisted for admin privileges please login as a guest user.");
-            localStorage.setItem("isLogedIn", "false");
+            setMessage("❌ Access Blocked: Your email is not whitelisted.");
             return;
         }
 
-        // 2. Query/Match manual input against list of database credentials
-        const matchedDbUser = adminUsers.find(
-            (u) => u.username.toLowerCase() === inputUserLower && u.userpassword === password
-        );
+        try {
 
-        // Check if matching whitelisted database record was found with correct password
-        if (matchedDbUser) {
-            const assignedRole = matchedDbUser.role || "admin";
+            // FIX: use VITE_ADMIN_API_URL, which already points to the full,
+            // correct endpoint (https://.../api/admin_credentials).
+            // VITE_API_BASE_URL doesn't exist in the .env at all -- that was
+            // the root cause of both the 404s (undefined base + wrong/duplicated
+            // path segments).
+            const response = await fetch(import.meta.env.VITE_ADMIN_API_URL,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username: inputUserLower,
+                        password
+                    })
+                }
+            );
 
-            setMessage("Login successful");
-            localStorage.setItem("isLogedIn", "true");
-            localStorage.setItem("userRole", assignedRole);
-            localStorage.setItem("userIdentifier", inputUserLower);
-            localStorage.setItem("userName", inputUserLower.split('@')[0]);
-            
-            navigate("/gallery");
-        } else {
-            setMessage("❌ Invalid username or password");
-            localStorage.setItem("isLogedIn", "false");
+            const data = await response.json();
+
+            if (data.success) {
+
+                setMessage("Login successful");
+                localStorage.setItem("isLogedIn", "true");
+                localStorage.setItem("userRole", data.user.role);
+                localStorage.setItem("userIdentifier", data.user.username);
+                localStorage.setItem(
+                    "userName",
+                    data.user.username.split("@")[0]
+                );
+
+                navigate("/gallery");
+
+            } else {
+
+                setMessage("❌ " + (data.message || "Invalid username or password"));
+                localStorage.setItem("isLogedIn", "false");
+
+            }
+
+        } catch (err) {
+
+            console.error(err);
+            setMessage("Server error.");
+
         }
+
     };
 
     const handleGuest = () => {
