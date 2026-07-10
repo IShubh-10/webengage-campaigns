@@ -12,7 +12,8 @@ const ALLOWED_ADMIN_EMAILS = [
     "niraj.jain@webengage.com",
     "ayushi.jain@webengage.com",
     "prathamesh.shivekar@webengage.com",
-    "ravina.jain@webengage.com"
+    "ravina.jain@webengage.com",
+    "ashish.raj@webengage.com"
 ];
 
 const Login = () => {

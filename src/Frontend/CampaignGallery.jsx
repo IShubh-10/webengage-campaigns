@@ -500,7 +500,10 @@ export default function App() {
                         <div className="card-meta">
                           <span>{new Date(c.date || Date.now()).toLocaleDateString()}</span>
                           {userAdmin === "true" ? (
-                            <span>Created by - {c.created_by ? c.created_by.split("@")[0].split(".")[0].charAt(0).toUpperCase() + c.created_by.split("@")[0].split(".")[0].slice(1) : ""}</span>
+                            <span style={{
+                              color: c.status === "Deleted" ? "#dc2626" : "#64748b",
+                              fontWeight: c.status === "Deleted" ? "400" : "400"}}>
+                               {c.status === "Deleted" ? "Deleted by - " : "Created by - "} {c.created_by ? c.created_by.split("@")[0].split(".")[0].charAt(0).toUpperCase() + c.created_by.split("@")[0].split(".")[0].slice(1) : ""}</span>
                           ) : null }
                           {/* {c.asanaLink && <a href={c.asanaLink} target="_blank" rel="noreferrer" style={{color: 'var(--primary)'}} title="Open Asana Task"><ExternalLink size={14}/></a>} */}
                         </div>
